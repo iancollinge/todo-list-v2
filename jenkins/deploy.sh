@@ -2,4 +2,4 @@
 
 echo "Deploy stage"
 
-ssh jenkins@dev-jenkins docker stack deploy --compose-file docker-compose.yaml todo-app
+ssh jenkins@swarm-manager docker stack deploy --compose-file docker-compose.yaml todo-app
