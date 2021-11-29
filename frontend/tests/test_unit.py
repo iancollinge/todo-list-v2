@@ -1,6 +1,14 @@
 from flask import url_for
 from flask_testing import TestCase
 from application import app
+from application.routes import backend_host
+import requests_mock
+
+test_task = {
+                "id": 1,
+                "description": "Test the frontend",
+                "completed": False
+            }
 
 class TestBase(TestCase):
 
@@ -15,36 +23,53 @@ class TestBase(TestCase):
 class TestViews(TestBase):
     # Test whether we get a successful response from our routes
     def test_home_get(self):
-        response = self.client.get(url_for('home'))
-        self.assert200(response)
+        with requests_mock.Mocker() as m:
+            all_tasks = { "tasks": [test_task] }
+            m.get(f"http://{backend_host}/read/allTasks", json=all_tasks)
+            response = self.client.get(url_for('home'))
+            self.assert200(response)
     
     def test_create_task_get(self):
         response = self.client.get(url_for('create_task'))
         self.assert200(response)
 
-    def test_read_tasks_get(self):
-        response = self.client.get(url_for('read_tasks'))
-        self.assert200(response)
-
     def test_update_task_get(self):
-        response = self.client.get(url_for('update_task', id=1))
-        self.assert200(response)
+        with requests_mock.Mocker() as m:
+            m.get(f"http://{backend_host}/read/task/1", json=test_task)
+            response = self.client.get(url_for('update_task', id=1))
+            self.assert200(response)
 
 class TestRead(TestBase):
 
     def test_read_home_tasks(self):
-        response = self.client.get(url_for('home'))
-        self.assertIn(b"Run unit tests", response.data)
+        with requests_mock.Mocker() as m:
+            all_tasks = { "tasks": [test_task] }
+            m.get(f"http://{backend_host}/read/allTasks", json=all_tasks)
+            response = self.client.get(url_for('home'))
+            self.assertIn(b"Test the frontend", response.data)
 
 class TestCreate(TestBase):
 
     def test_create_task(self):
-        response = self.client.post(
-            url_for('create_task'),
-            data={"description": "Testing create functionality"},
-            follow_redirects=True
-        )
-        self.assertIn(b"Testing create functionality", response.data)
+        with requests_mock.Mocker() as m:
+            all_tasks = { "tasks": 
+                [
+                    test_task,
+                    {
+                        "id": 2,
+                        "description": "Testing create functionality",
+                        "completed": False
+                    }
+                ] 
+            }
+            m.post(f"http://{backend_host}/create/task", data="Test response")
+            m.get(f"http://{backend_host}/read/allTasks", json=all_tasks)
+            response = self.client.post(
+                url_for('create_task'),
+                json={"description": "Testing create functionality"},
+                follow_redirects=True
+            )
+            self.assertIn(b"Testing create functionality", response.data)
     
 class TestUpdate(TestBase):
 
