@@ -62,7 +62,7 @@ class TestCreate(TestBase):
                     }
                 ] 
             }
-            m.post(f"http://{backend_host}/create/task", data="Test response")
+            m.post(f"http://{backend_host}/create/task", text="Test response")
             m.get(f"http://{backend_host}/read/allTasks", json=all_tasks)
             response = self.client.post(
                 url_for('create_task'),
@@ -74,27 +74,43 @@ class TestCreate(TestBase):
 class TestUpdate(TestBase):
 
     def test_update_task(self):
-        response = self.client.post(
-            url_for('update_task', id=1),
-            data={"description": "Testing update functionality"},
-            follow_redirects=True
-        )
-        self.assertIn(b"Testing update functionality", response.data)
+        with requests_mock.Mocker() as m:
+            m.get(f"http://{backend_host}/read/task/1", json=test_task)
+            m.put(f"http://{backend_host}/update/task/1", text="Test response")
+            test_task["description"] = "Testing update functionality"
+            m.get(f"http://{backend_host}/read/allTasks", json={ "tasks": [test_task] })
+            response = self.client.post(
+                url_for('update_task', id=1),
+                data={"description": "Testing update functionality"},
+                follow_redirects=True
+            )
+            self.assertIn(b"Testing update functionality", response.data)
     
-    # def test_complete_task(self):
-    #     response = self.client.get(url_for('complete_task', id=1), follow_redirects=True)
-    #     self.assertEqual(False, True)
+    def test_complete_task(self):
+        with requests_mock.Mocker() as m:
+            m.put(f"http://{backend_host}/complete/task/1")
+            test_task["completed"] = True
+            m.get(f"http://{backend_host}/read/allTasks", json={ "tasks": [test_task] })
+            response = self.client.get(url_for('complete_task', id=1), follow_redirects=True)
+            self.assert200(response)
     
-    # def test_incomplete_task(self):
-    #     response = self.client.get(url_for('incomplete_task', id=1), follow_redirects=True)
-    #     self.assertEqual(Tasks.query.get(1).completed, False)
+    def test_incomplete_task(self):
+        with requests_mock.Mocker() as m:
+            m.put(f"http://{backend_host}/incomplete/task/1")
+            test_task["completed"] = False
+            m.get(f"http://{backend_host}/read/allTasks", json={ "tasks": [test_task] })
+            response = self.client.get(url_for('incomplete_task', id=1), follow_redirects=True)
+            self.assert200(response)
         
 
 class TestDelete(TestBase):
 
     def test_delete_task(self):
-        response = self.client.get(
-            url_for('delete_task', id=1),
-            follow_redirects=True
-        )
-        self.assertNotIn(b"Run unit tests", response.data)
+        with requests_mock.Mocker() as m:
+            m.delete(f"http://{backend_host}/delete/task/1")
+            m.get(f"http://{backend_host}/read/allTasks", json={ "tasks": [] })
+            response = self.client.get(
+                url_for('delete_task', id=1),
+                follow_redirects=True
+            )
+            self.assertNotIn(b"Test the frontend", response.data)
