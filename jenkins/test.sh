@@ -7,4 +7,3 @@ python3 -m pytest \
     --cov-report xml:coverage.xml \
     --junitxml=junit_report.xml
     
-exit 1
