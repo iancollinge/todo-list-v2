@@ -6,3 +6,5 @@ python3 -m pytest \
     --cov-report term-missing \
     --cov-report xml:coverage.xml \
     --junitxml=junit_report.xml
+    
+exit 1
