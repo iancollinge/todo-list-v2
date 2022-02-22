@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         CREATE_SCHEMA = "true"
-        RUN_APP = "true"
+        RUN_APP = "false"
         DATABASE_URI = credentials("DATABASE_URI")
     }
     stages {
